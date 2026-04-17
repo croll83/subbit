@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { scene } from './scene.js';
 import { FIELD } from './pitch.js';
 import { createFigureBody, getPosition, getVelocity, getSpeed, setLinearVelocity, setPosition, removeBody, registerCollider } from './physics.js';
+import { getTeam, DEFAULT_MATCH } from './teams.js';
 
 // === AUTHENTIC SUBBUTEO PROPORTIONS ===
 // Real Subbuteo: field ~140cm, dome ~22mm diameter
@@ -15,21 +16,35 @@ const KEEPER_H = 0.50;
 // Physics collider stays at FIG_R, but visual mesh is scaled up
 const VISUAL_SCALE = 1.5;
 
-// Team colors (classic Subbuteo)
-const TEAM_COLORS = {
-  home: {
-    jersey: 0xe74c3c,      // Red
-    shorts: 0xffffff,      // White
-    socks: 0xe74c3c,       // Red
-    keeper: 0xf1c40f,      // Yellow keeper
-  },
-  away: {
-    jersey: 0x2980b9,      // Blue
-    shorts: 0x2c3e50,      // Dark blue
-    socks: 0x2980b9,       // Blue
-    keeper: 0x27ae60,      // Green keeper
-  }
-};
+// Current match teams (set via setMatchTeams)
+let homeTeamConfig = getTeam(DEFAULT_MATCH.home);
+let awayTeamConfig = getTeam(DEFAULT_MATCH.away);
+
+// Convert hex color string to number
+function hexToNumber(hex) {
+  if (typeof hex === 'number') return hex;
+  return parseInt(hex.replace('#', ''), 16);
+}
+
+// Get team colors from config
+function getTeamColors(teamSide) {
+  const config = teamSide === 'home' ? homeTeamConfig : awayTeamConfig;
+  const kit = config.kit;
+  return {
+    jersey: hexToNumber(kit.primary),
+    shorts: hexToNumber(kit.shorts),
+    socks: hexToNumber(kit.primary),  // Socks match jersey
+    collar: hexToNumber(kit.collar),
+    keeper: 0xf1c40f,  // Yellow keeper for now
+  };
+}
+
+// Set match teams (call before buildFigures)
+export function setMatchTeams(homeCode, awayCode) {
+  homeTeamConfig = getTeam(homeCode);
+  awayTeamConfig = getTeam(awayCode);
+  console.log(`[Figures] Teams set: ${homeTeamConfig.name} vs ${awayTeamConfig.name}`);
+}
 
 // Formation: 1-4-3-3 layout (11 players each)
 const HOME_POSITIONS = [
@@ -107,7 +122,7 @@ export function initFigurePhysics() {
 
 function createSubbuteoFigure(team, index, x, z, isKeeper) {
   const r = isKeeper ? KEEPER_R : FIG_R;
-  const colors = TEAM_COLORS[team];
+  const colors = getTeamColors(team);
   const jerseyColor = isKeeper ? colors.keeper : colors.jersey;
 
   const group = new THREE.Group();

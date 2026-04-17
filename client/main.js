@@ -1,14 +1,14 @@
 import * as THREE from 'three';
 import { initScene, renderer, scene, getActiveCamera } from './game/scene.js';
 import { buildPitch, FIELD } from './game/pitch.js';
-import { buildFigures, figures, selectFigure, getFigureAt, getKeeper, FIG_R, initFigurePhysics, updateFigures, kickFigure, getFigureSpeed, clearFigures, setActiveTeam, moveKeeperToPosition } from './game/figures.js';
+import { buildFigures, figures, selectFigure, getFigureAt, getKeeper, FIG_R, initFigurePhysics, updateFigures, kickFigure, getFigureSpeed, clearFigures, setActiveTeam, moveKeeperToPosition, setMatchTeams } from './game/figures.js';
 import { buildBall, updateBall, kickBall, placeBall, ballPos, ballVel, checkGoal, BALL_R, initBallPhysics, getBallBody } from './game/ball.js';
 import { switchTo2D, switchTo3D, getMode } from './game/camera.js';
 import { initInput, setCurrentFigure, getCurrentFigure } from './game/input.js';
 import {
   updateScore, updateTimer, setTurnLabel, setFlickHint,
   showResult, showKeeperUI, hideKeeperUI, getKeeperSliderPos,
-  initViewToggle, updateViewToggle, initKeeperSlider
+  initViewToggle, updateViewToggle, initKeeperSlider, setTeams
 } from './game/ui.js';
 import { initPhysics, stepPhysics, createWall, WALL_TYPE, applyImpulse, setLinearVelocity, getSpeed, getCollisionEvents, getColliderData } from './game/physics.js';
 import { computeBotMove, computeKeeperPosition, setDifficulty, getDifficulty } from './game/bot.js';
@@ -52,6 +52,13 @@ const MAX_CONSECUTIVE_TOUCHES = 3;
 
 async function init() {
   console.log('[init] Starting...');
+  
+  // Set up teams (default: Italy vs Brazil)
+  const homeTeam = 'ITA';
+  const awayTeam = 'BRA';
+  setTeams(homeTeam, awayTeam);        // Update HUD
+  setMatchTeams(homeTeam, awayTeam);   // Update figure colors
+  
   initScene();
   console.log('[init] Scene done');
   buildPitch();

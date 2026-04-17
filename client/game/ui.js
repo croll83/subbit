@@ -1,12 +1,16 @@
 // HUD — Sport-tech Balanced (Variant B)
 // All DOM elements for the redesigned HUD
 
+import { getTeam, TEAMS, DEFAULT_MATCH } from './teams.js';
+
 // ═══ DOM REFERENCES ═══
 const $scoreBar = document.getElementById('score-bar');
 const $homeScore = document.getElementById('home-score');
 const $awayScore = document.getElementById('away-score');
 const $homeCode = document.getElementById('home-code');
 const $awayCode = document.getElementById('away-code');
+const $homeFlag = document.getElementById('home-flag');
+const $awayFlag = document.getElementById('away-flag');
 const $halfLabel = document.getElementById('half-label');
 const $timerDisplay = document.getElementById('timer-display');
 
@@ -28,6 +32,7 @@ const $bannerText = document.getElementById('banner-text');
 const $goalOverlay = document.getElementById('goal-overlay');
 const $goalMeta = document.getElementById('goal-meta');
 const $goalScore = document.getElementById('goal-score');
+const $goalTeams = document.getElementById('goal-teams');
 
 const $keeperUI = document.getElementById('keeper-ui');
 const $keeperTrack = document.getElementById('keeper-track');
@@ -43,6 +48,30 @@ let power = 0;
 let keeperPos = 50; // 0-100
 let onViewToggle = null;
 let keeperInputHandler = null;
+
+// Current match teams
+let homeTeam = getTeam(DEFAULT_MATCH.home);
+let awayTeam = getTeam(DEFAULT_MATCH.away);
+
+// ═══ TEAM SETUP ═══
+export function setTeams(homeCode, awayCode) {
+  homeTeam = getTeam(homeCode);
+  awayTeam = getTeam(awayCode);
+  
+  // Update HUD
+  $homeCode.textContent = homeTeam.shortName;
+  $awayCode.textContent = awayTeam.shortName;
+  $homeFlag.innerHTML = homeTeam.flag;
+  $awayFlag.innerHTML = awayTeam.flag;
+  
+  console.log(`[UI] Teams set: ${homeTeam.name} vs ${awayTeam.name}`);
+}
+
+export function getHomeTeam() { return homeTeam; }
+export function getAwayTeam() { return awayTeam; }
+
+// Export TEAMS for external access
+export { TEAMS };
 
 // ═══ VIEW TOGGLE ═══
 export function initViewToggle(callback) {
@@ -75,9 +104,9 @@ export function updateScore(home, away) {
   $awayScore.textContent = away;
 }
 
+// Legacy - now use setTeams()
 export function setTeamCodes(home, away) {
-  $homeCode.textContent = home;
-  $awayCode.textContent = away;
+  setTeams(home, away);
 }
 
 // ═══ TIMER ═══
@@ -188,7 +217,7 @@ function updateBanner() {
       $bannerText.innerHTML = '<span style="color: rgba(255,255,255,0.82);">Turno avversario</span> <span class="divider"></span> <span class="latency">34ms</span>';
       break;
     case 'goal':
-      $bannerText.innerHTML = 'GOL di <span class="accent">Marco</span> · 78\'';
+      $bannerText.innerHTML = `GOL di <span class="accent">${homeTeam.name}</span>`;
       break;
   }
 }
@@ -210,6 +239,7 @@ export function showResult(text, duration = 1800) {
     const homeScore = $homeScore.textContent;
     const awayScore = $awayScore.textContent;
     $goalScore.textContent = homeScore;
+    $goalTeams.innerHTML = `${homeTeam.name} <span class="score-highlight">${homeScore}</span> – ${awayScore} ${awayTeam.name}`;
     
     setTimeout(() => {
       hideGoal();
@@ -222,6 +252,7 @@ export function showGoal(minute, half, homeScore, awayScore) {
   const halfText = half === 1 ? '1° TEMPO' : '2° TEMPO';
   $goalMeta.textContent = `${minute}' · ${halfText}`;
   $goalScore.textContent = homeScore;
+  $goalTeams.innerHTML = `${homeTeam.name} <span class="score-highlight">${homeScore}</span> – ${awayScore} ${awayTeam.name}`;
   setState('goal');
 }
 
@@ -298,5 +329,6 @@ export function hideKeeperUI() {
 }
 
 // ═══ INITIALIZATION ═══
-// Set initial state
+// Set default teams on load
+setTeams(DEFAULT_MATCH.home, DEFAULT_MATCH.away);
 updateBanner();
