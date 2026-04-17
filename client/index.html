@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Subbit</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #1a1a2e; overflow: hidden; font-family: 'Arial', sans-serif; }
+    #canvas-container { width: 100vw; height: 100vh; position: relative; }
+    canvas { display: block; }
+    
+    /* Rotate phone overlay */
+    #rotate-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: #1a1a2e;
+      z-index: 9999;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      color: #fff;
+      font-size: 18px;
+      text-align: center;
+      padding: 20px;
+    }
+    #rotate-overlay .icon {
+      font-size: 60px;
+      margin-bottom: 20px;
+      animation: wiggle 1.5s ease-in-out infinite;
+    }
+    @keyframes wiggle {
+      0%, 100% { transform: rotate(-15deg); }
+      50% { transform: rotate(15deg); }
+    }
+    @media screen and (orientation: portrait) {
+      #rotate-overlay { display: flex; }
+    }
+
+    #hud {
+      position: absolute;
+      top: 50%; right: 12px;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+      z-index: 10;
+    }
+    .hud-box {
+      background: rgba(0,0,0,0.7);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 8px;
+      padding: 6px 12px;
+      text-align: center;
+      font-size: 12px;
+      color: #fff;
+    }
+    #score-display {
+      font-weight: bold;
+      white-space: nowrap;
+    }
+    #timer-display {
+      font-variant-numeric: tabular-nums;
+    }
+    #half-label {
+      font-size: 9px;
+      color: #aaa;
+      text-transform: uppercase;
+    }
+    #view-toggle {
+      background: rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 14px;
+      color: #fff;
+      cursor: pointer;
+      pointer-events: auto;
+    }
+    #view-toggle:active {
+      background: rgba(255,255,255,0.4);
+    }
+
+    #info-bar {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      padding: 12px 20px;
+      background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+      text-align: center;
+      pointer-events: none;
+      z-index: 10;
+    }
+    #turn-label {
+      font-size: 13px;
+      color: #fff;
+      background: rgba(0,0,0,0.5);
+      border-radius: 20px;
+      padding: 6px 16px;
+      display: inline-block;
+    }
+    #flick-hint {
+      font-size: 11px;
+      color: #aaa;
+      margin-top: 4px;
+    }
+
+    /* Keeper slider - VERTICAL on left side */
+    #keeper-ui {
+      position: absolute;
+      left: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      z-index: 20;
+    }
+    #keeper-ui.left-side {
+      /* No longer needed but keep for compatibility */
+    }
+    #keeper-ui .label { 
+      color: #fff; 
+      font-size: 13px; 
+      background: rgba(200,50,50,0.8); 
+      padding: 4px 12px; 
+      border-radius: 20px;
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+    }
+    #keeper-slider {
+      -webkit-appearance: none;
+      /* Vertical slider */
+      width: 40px; 
+      height: 180px;
+      writing-mode: vertical-lr;
+      direction: rtl;
+      background: rgba(255,255,255,0.15);
+      border-radius: 20px;
+      outline: none;
+      cursor: pointer;
+    }
+    #keeper-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      background: #e74c3c;
+      cursor: pointer;
+      border: 3px solid #fff;
+    }
+
+    /* Goal / result overlay */
+    #result-overlay {
+      position: absolute;
+      inset: 0;
+      display: none;
+      justify-content: center;
+      align-items: center;
+      background: rgba(0,0,0,0.5);
+      z-index: 30;
+    }
+    #result-text {
+      font-size: 64px;
+      font-weight: 900;
+      color: #fff;
+      text-shadow: 0 0 40px rgba(255,200,0,0.8);
+      animation: pop 0.4s ease-out;
+    }
+    @keyframes pop {
+      from { transform: scale(0.5); opacity: 0; }
+      to   { transform: scale(1); opacity: 1; }
+    }
+
+    /* Predictive line canvas overlay */
+    #arrow-canvas {
+      position: absolute;
+      top: 0; left: 0;
+      pointer-events: none;
+      z-index: 5;
+    }
+  </style>
+</head>
+<body>
+  <!-- Rotate phone overlay -->
+  <div id="rotate-overlay">
+    <div class="icon">📱</div>
+    <div>Ruota il telefono<br>per giocare</div>
+  </div>
+
+  <div id="canvas-container">
+    <!-- HUD -->
+    <div id="hud">
+      <div class="hud-box">
+        <div id="half-label">1° tempo</div>
+        <div id="timer-display">2:00</div>
+      </div>
+      <div class="hud-box">
+        <div id="score-display">HOME 0 - 0 AWAY</div>
+      </div>
+      <button id="view-toggle">🔭 3D</button>
+    </div>
+
+    <!-- Info bar -->
+    <div id="info-bar">
+      <div id="turn-label">Il tuo turno — seleziona una pedina</div>
+      <div id="flick-hint"></div>
+    </div>
+
+    <!-- Keeper UI -->
+    <div id="keeper-ui">
+      <div class="label">⚽ DIFENDI!</div>
+      <input type="range" id="keeper-slider" min="0" max="100" value="50" />
+    </div>
+
+    <!-- Result overlay -->
+    <div id="result-overlay">
+      <div id="result-text">GOL!</div>
+    </div>
+
+    <!-- Predictive arrow canvas -->
+    <canvas id="arrow-canvas"></canvas>
+  </div>
+
+  <!-- Telegram Mini App SDK -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script>
+    // Initialize TMA when ready
+    function initTMA() {
+      if (!window.Telegram || !Telegram.WebApp) {
+        console.log('[TMA] Not running in Telegram');
+        return;
+      }
+      
+      const tg = Telegram.WebApp;
+      console.log('[TMA] Version:', tg.version);
+      
+      tg.ready();
+      tg.expand();
+      
+      // Disable swipe to close first
+      if (tg.disableVerticalSwipes) {
+        tg.disableVerticalSwipes();
+        console.log('[TMA] Disabled vertical swipes');
+      }
+      
+      // Request fullscreen (TMA 8.0+)
+      try {
+        if (tg.requestFullscreen && tg.version && parseFloat(tg.version) >= 8.0) {
+          tg.requestFullscreen();
+          console.log('[TMA] Requested fullscreen');
+        }
+      } catch (e) {
+        console.log('[TMA] Fullscreen not supported:', e.message);
+      }
+      
+      // lockOrientation() locks CURRENT orientation, doesn't force landscape
+      // We need to wait until user rotates to landscape, then lock it
+      console.log('[TMA] Ready - rotate phone to landscape to play');
+    }
+    
+    // Run on DOMContentLoaded
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initTMA);
+    } else {
+      initTMA();
+    }
+    
+    // Lock orientation when user rotates to landscape
+    let orientationLocked = false;
+    function checkAndLockLandscape() {
+      if (orientationLocked) return;
+      
+      const isLandscape = window.innerWidth > window.innerHeight;
+      if (isLandscape && window.Telegram && Telegram.WebApp && Telegram.WebApp.lockOrientation) {
+        Telegram.WebApp.lockOrientation();
+        orientationLocked = true;
+        console.log('[TMA] Locked orientation in landscape!');
+      }
+    }
+    
+    window.addEventListener('resize', checkAndLockLandscape);
+    window.addEventListener('orientationchange', () => {
+      setTimeout(checkAndLockLandscape, 100);
+    });
+  </script>
+
+  <!-- Three.js + Rapier via CDN -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"
+    }
+  }
+  </script>
+
+  <script type="module" src="main.js?v=12"></script>
+</body>
+</html>
