@@ -33,6 +33,8 @@ const $goalOverlay = document.getElementById('goal-overlay');
 const $goalMeta = document.getElementById('goal-meta');
 const $goalScore = document.getElementById('goal-score');
 const $goalTeams = document.getElementById('goal-teams');
+const $goalCard = document.getElementById('goal-card');
+const $goalTitle = document.getElementById('goal-title');
 
 const $keeperUI = document.getElementById('keeper-ui');
 const $keeperTrack = document.getElementById('keeper-track');
@@ -43,7 +45,7 @@ const $opponentBadge = document.getElementById('opponent-badge');
 
 // ═══ STATE ═══
 let currentState = 'your_turn'; // your_turn, flicking, shot_incoming, goal, opponent_turn
-let flickCount = 3;
+let flickCount = 3;  // Remaining flicks (3 = all available, 0 = none left)
 let power = 0;
 let keeperPos = 50; // 0-100
 let onViewToggle = null;
@@ -151,10 +153,14 @@ export function setFlickHint(text) {
 }
 
 // ═══ FLICK PILLS ═══
-export function setFlickCount(count) {
-  flickCount = count;
+// flickCount = remaining flicks (3, 2, 1, 0)
+// Pills show USED flicks (filled = already used)
+export function setFlickCount(remaining) {
+  flickCount = remaining;
+  const used = 3 - remaining;  // How many have been used
   $pills.forEach((pill, i) => {
-    pill.classList.toggle('active', i < count);
+    // Pill i is "active" (filled/used) if i < used
+    pill.classList.toggle('active', i < used);
   });
 }
 
@@ -202,7 +208,7 @@ function updateBanner() {
   const shouldPulse = currentState === 'your_turn' || currentState === 'shot_incoming';
   $bannerDot.classList.toggle('pulse', shouldPulse);
   
-  // Text content
+  // Text content based on state
   switch (currentState) {
     case 'your_turn':
       $bannerText.innerHTML = 'Il tuo turno — <span class="accent">tocca una pedina</span>';
@@ -230,30 +236,63 @@ function getAccentColor() {
   }
 }
 
-// ═══ GOAL CARD ═══
+// ═══ NOTIFICATIONS (Goal, Halftime, End, Foul, etc.) ═══
 export function showResult(text, duration = 1800) {
-  // Parse legacy "GOL!" or similar
-  if (text.toUpperCase().includes('GOL')) {
-    setState('goal');
-    // Update goal card with current score
-    const homeScore = $homeScore.textContent;
-    const awayScore = $awayScore.textContent;
-    $goalScore.textContent = homeScore;
-    $goalTeams.innerHTML = `${homeTeam.name} <span class="score-highlight">${homeScore}</span> – ${awayScore} ${awayTeam.name}`;
-    
-    setTimeout(() => {
-      hideGoal();
-      setState('your_turn');
-    }, duration);
+  // Determine notification type from text
+  const upperText = text.toUpperCase();
+  
+  let title = text;
+  let meta = '';
+  let subtitle = '';
+  
+  if (upperText.includes('GOL')) {
+    title = 'GOAL';
+    const homeScoreVal = $homeScore.textContent;
+    const awayScoreVal = $awayScore.textContent;
+    subtitle = `${homeTeam.name} <span class="score-highlight">${homeScoreVal}</span> – ${awayScoreVal} ${awayTeam.name}`;
+  } else if (upperText.includes('FINE PRIMO TEMPO') || upperText.includes('HALFTIME')) {
+    title = 'FINE 1° TEMPO';
+  } else if (upperText.includes('FINE PARTITA') || upperText.includes('FULL TIME')) {
+    title = 'FINE PARTITA';
+    const homeScoreVal = $homeScore.textContent;
+    const awayScoreVal = $awayScore.textContent;
+    subtitle = `${homeTeam.name} <span class="score-highlight">${homeScoreVal}</span> – ${awayScoreVal} ${awayTeam.name}`;
+  } else if (upperText.includes('FALLO') || upperText.includes('FOUL')) {
+    title = 'FALLO';
+  } else if (upperText.includes('PUNIZIONE') || upperText.includes('FREE KICK')) {
+    title = 'PUNIZIONE';
+  } else if (upperText.includes('CAMBIO') || upperText.includes('CHANGE')) {
+    title = 'CAMBIO TURNO';
+  } else if (upperText.includes('PARATA') || upperText.includes('SAVE')) {
+    title = 'PARATA!';
   }
+  
+  // Update goal card content
+  if ($goalTitle) $goalTitle.textContent = title;
+  if ($goalMeta) $goalMeta.textContent = meta;
+  if ($goalTeams) $goalTeams.innerHTML = subtitle || '';
+  if ($goalScore) $goalScore.style.display = subtitle ? 'inline' : 'none';
+  
+  // Show overlay
+  $goalOverlay.style.display = 'flex';
+  
+  setTimeout(() => {
+    hideGoal();
+    setState('your_turn');
+  }, duration);
 }
 
-export function showGoal(minute, half, homeScore, awayScore) {
+export function showGoal(minute, half, homeScoreVal, awayScoreVal) {
   const halfText = half === 1 ? '1° TEMPO' : '2° TEMPO';
-  $goalMeta.textContent = `${minute}' · ${halfText}`;
-  $goalScore.textContent = homeScore;
-  $goalTeams.innerHTML = `${homeTeam.name} <span class="score-highlight">${homeScore}</span> – ${awayScore} ${awayTeam.name}`;
-  setState('goal');
+  if ($goalMeta) $goalMeta.textContent = `${minute}' · ${halfText}`;
+  if ($goalTitle) $goalTitle.textContent = 'GOAL';
+  if ($goalScore) {
+    $goalScore.textContent = homeScoreVal;
+    $goalScore.style.display = 'inline';
+  }
+  if ($goalTeams) $goalTeams.innerHTML = `${homeTeam.name} <span class="score-highlight">${homeScoreVal}</span> – ${awayScoreVal} ${awayTeam.name}`;
+  
+  $goalOverlay.style.display = 'flex';
 }
 
 // ═══ KEEPER SLIDER ═══

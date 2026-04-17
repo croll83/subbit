@@ -8,7 +8,8 @@ import { initInput, setCurrentFigure, getCurrentFigure } from './game/input.js';
 import {
   updateScore, updateTimer, setTurnLabel, setFlickHint,
   showResult, showKeeperUI, hideKeeperUI, getKeeperSliderPos,
-  initViewToggle, updateViewToggle, initKeeperSlider, setTeams
+  initViewToggle, updateViewToggle, initKeeperSlider, setTeams,
+  setFlickCount, showFlickPills, hideFlickPills
 } from './game/ui.js';
 import { initPhysics, stepPhysics, createWall, WALL_TYPE, applyImpulse, setLinearVelocity, getSpeed, getCollisionEvents, getColliderData } from './game/physics.js';
 import { computeBotMove, computeKeeperPosition, setDifficulty, getDifficulty } from './game/bot.js';
@@ -359,6 +360,7 @@ function onFigureSelected(fig) {
     setCurrentFigure(null);
     setFlickHint('Tap su una pedina tua per selezionarla');
     hideKeeperUI();  // Hide slider when deselecting
+    hideFlickPills();  // Hide flick counter
     switchTo2D();
     return;
   }
@@ -373,12 +375,21 @@ function onFigureSelected(fig) {
   selectFigure(fig);
   setCurrentFigure(fig);
   
-  // Show touch counter if continuing with same figure
-  if (state.currentFigure === fig.userData.id && state.consecutiveTouches > 0) {
-    setFlickHint(`Trascina per tirare (tocco ${state.consecutiveTouches + 1}/${MAX_CONSECUTIVE_TOUCHES})`);
-  } else {
-    setFlickHint('Trascina per tirare');
+  // Calculate remaining flicks for this figure
+  let remainingFlicks = MAX_CONSECUTIVE_TOUCHES;
+  if (state.currentFigure === fig.userData.id) {
+    remainingFlicks = MAX_CONSECUTIVE_TOUCHES - state.consecutiveTouches;
   }
+  setFlickCount(remainingFlicks);
+  
+  // Show flick pills above the figure
+  const cam = getActiveCamera();
+  const figPos = fig.position.clone();
+  figPos.y = 0.5; // Slightly above ground
+  const v = figPos.project(cam);
+  const screenX = (v.x + 1) / 2 * window.innerWidth;
+  const screenY = (-v.y + 1) / 2 * window.innerHeight;
+  showFlickPills(screenX, screenY - 40); // 40px above figure center
 
   // Switch to 3D view
   if (state.phase === 'playing' || state.phase === 'kickoff') {
@@ -424,6 +435,7 @@ function onFlick(figure, vx, vz) {
   selectFigure(null);
   setCurrentFigure(null);
   setFlickHint('');
+  hideFlickPills();
   
   // Apply keeper position
   const defendingTeam = state.possession === 'home' ? 'away' : 'home';

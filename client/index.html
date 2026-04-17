@@ -65,10 +65,19 @@
       #rotate-overlay { display: flex; }
     }
 
-    /* ═══ SCORE BAR (top-left pill) ═══ */
-    #score-bar {
+    /* ═══ TOP BAR (centered: score + view toggle) ═══ */
+    #top-bar {
       position: absolute;
-      top: 10px; left: 10px;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 10;
+    }
+    
+    #score-bar {
       display: flex;
       align-items: center;
       gap: 10px;
@@ -80,7 +89,6 @@
       border-radius: 999px;
       box-shadow: 0 4px 16px rgba(0,0,0,0.4);
       color: #fff;
-      z-index: 10;
     }
     #score-bar .flag {
       width: 14px; height: 14px;
@@ -126,10 +134,8 @@
       font-variant-numeric: tabular-nums;
     }
 
-    /* ═══ VIEW TOGGLE (top-right) ═══ */
+    /* ═══ VIEW TOGGLE (inside top-bar) ═══ */
     #view-toggle {
-      position: absolute;
-      top: 10px; right: 10px;
       display: flex;
       padding: 3px;
       background: rgba(7,32,15,0.7);
@@ -137,7 +143,6 @@
       -webkit-backdrop-filter: blur(16px);
       border: 1px solid rgba(255,255,255,0.15);
       border-radius: 999px;
-      z-index: 10;
     }
     #view-toggle button {
       padding: 4px 10px;
@@ -309,8 +314,8 @@
       gap: 4px;
       z-index: 20;
     }
-    #keeper-ui.left { left: 6px; }
-    #keeper-ui.right { right: 6px; }
+    #keeper-ui.left { left: 22px; }
+    #keeper-ui.right { right: 22px; }
     
     #keeper-track {
       flex: 1;
@@ -429,24 +434,24 @@
   </div>
 
   <div id="canvas-container">
-    <!-- ═══ SCORE BAR ═══ -->
-    <div id="score-bar">
-      <span class="flag" id="home-flag"></span>
-      <span class="team-code" id="home-code">ITA</span>
-      <span class="score-num" id="home-score">0</span>
-      <span class="score-dash">–</span>
-      <span class="score-num" id="away-score">0</span>
-      <span class="team-code" id="away-code">BRA</span>
-      <span class="flag" id="away-flag"></span>
-      <span class="separator"></span>
-      <span class="half" id="half-label">1T</span>
-      <span class="timer" id="timer-display">2:00</span>
-    </div>
-
-    <!-- ═══ VIEW TOGGLE ═══ -->
-    <div id="view-toggle">
-      <button id="btn-2d" class="active">2D</button>
-      <button id="btn-3d">3D</button>
+    <!-- ═══ TOP BAR (centered: score + view toggle) ═══ -->
+    <div id="top-bar">
+      <div id="score-bar">
+        <span class="flag" id="home-flag"></span>
+        <span class="team-code" id="home-code">ITA</span>
+        <span class="score-num" id="home-score">0</span>
+        <span class="score-dash">–</span>
+        <span class="score-num" id="away-score">0</span>
+        <span class="team-code" id="away-code">BRA</span>
+        <span class="flag" id="away-flag"></span>
+        <span class="separator"></span>
+        <span class="half" id="half-label">1T</span>
+        <span class="timer" id="timer-display">2:00</span>
+      </div>
+      <div id="view-toggle">
+        <button id="btn-2d" class="active">2D</button>
+        <button id="btn-3d">3D</button>
+      </div>
     </div>
 
     <!-- ═══ FLICK PILLS ═══ -->
@@ -480,7 +485,7 @@
     <div id="goal-overlay">
       <div id="goal-card">
         <div class="meta" id="goal-meta">78' · 2° TEMPO</div>
-        <div class="title">GOAL</div>
+        <div class="title" id="goal-title">GOAL</div>
         <div class="subtitle" id="goal-teams">Italia <span class="score-highlight" id="goal-score">1</span> – 0 Brasile</div>
       </div>
     </div>
@@ -580,6 +585,6 @@
   }
   </script>
 
-  <script type="module" src="main.js?v=14"></script>
+  <script type="module" src="main.js?v=15"></script>
 </body>
 </html>
